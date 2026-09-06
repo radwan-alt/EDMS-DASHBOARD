@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise EDMS Portal & Multi-Page Architecture - Mohammad Rizwan</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --border-color: #334155;
+      --accent-blue: #2563eb;
+      --accent-cyan: #0284c7;
+      --accent-green: #16a34a;
+      --accent-amber: #d97706;
+      --accent-red: #dc2626;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; }
+
+    /* 1. EDMS GATEWAY LANDING SCREEN */
+    #page-edms-gateway {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      padding: 20px;
+      text-align: center;
+    }
+    .hero-box {
+      max-width: 800px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border-color);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .hero-title { font-size: 2.2rem; color: #38bdf8; font-weight: 800; margin-bottom: 12px; }
+    .hero-subtitle { font-size: 1.1rem; color: #f8fafc; font-weight: 600; margin-bottom: 16px; }
+    .hero-desc { font-size: 0.9rem; color: var(--text-sub); line-height: 1.6; margin-bottom: 30px; }
+    .btn-enter {
+      background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 16px 36px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-enter:hover { transform: translateY(-2px); box-shadow: 0 15px 20px -3px rgba(37, 99, 235, 0.6); }
+
+    /* MAIN APP LAYOUT */
+    #main-app { display: none; padding: 20px; }
+
+    /* Executive Header */
+    .profile-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-left: 6px solid var(--accent-blue);
+      padding: 18px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Multi-Page Navigation Bar */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid var(--border-color);
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 12px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: #38bdf8;
+      border-bottom-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    /* Sub-Page Panels */
+    .page-panel { display: none; }
+    .page-panel.active { display: block; }
+
+    /* Profile Page Grid */
+    .profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .prof-box { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; }
+    .prof-box h3 { color: #38bdf8; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 14px; font-size: 1.05rem; }
+    
+    .badge-item { background: #0f172a; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .badge-title { font-weight: 600; color: #f8fafc; font-size: 0.85rem; }
+    .badge-no { font-family: monospace; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; }
+
+    /* Tables & Cards */
+    .data-card { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+    th { background: #111827; color: var(--text-sub); padding: 12px; border-bottom: 1px solid var(--border-color); }
+    td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+    tr:hover { background: #26334d; }
+
+    /* Controls & Modals */
+    .controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .controls input, .controls select, .controls button { background: #0f172a; border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 6px; }
+    
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--panel-bg); padding: 24px; border-radius: 8px; width: 100%; max-width: 500px; border: 1px solid var(--border-color); }
+  </style>
+</head>
+<body>
+
+  <!-- FIRST PAGE: EDMS GATEWAY PORTAL -->
+  <div id="page-edms-gateway">
+    <div class="hero-box">
+      <div class="hero-title">ELECTRONIC DOCUMENT MANAGEMENT SYSTEM (EDMS)</div>
+      <div class="hero-subtitle">Enterprise Engineering Data Architecture & Document Control</div>
+      <p class="hero-desc">
+        Designed for Oil & Gas Mega Projects, Infrastructure & Aviation Development[cite: 2]. Architecture & Documentation Specialist: <strong>Mohammad Rizwan</strong> (Senior Document Control Specialist)[cite: 2].
+      </p>
+      <button class="btn-enter" onclick="enterEDMS()">Enter Enterprise EDMS Architecture →</button>
+    </div>
+  </div>
+
+  <!-- NEXT MULTI-PAGE DASHBOARD -->
+  <div id="main-app">
+    
+    <!-- Header Banner -->
+    <header class="profile-card">
+      <div>
+        <h2 style="color:#f8fafc; font-size:1.4rem;">Mohammad Rizwan[cite: 2]</h2>
+        <p style="color:#94a3b8; font-size:0.85rem;">Senior Document Control Specialist | QMS Internal Audit Trained & Document Preparation Expert (18+ Yrs)[cite: 2]</p>
+      </div>
+      <button onclick="exitToGateway()" style="background:#334155; color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">← EDMS Portal Home</button>
+    </header>
+
+    <!-- Multi-Page Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-profile')">📄 Document Controller Profile & QMS</button>
+      <button class="tab-btn" onclick="switchTab('tab-docs')">📂 Documents & Drawings</button>
+      <button class="tab-btn" onclick="switchTab('tab-material')">📦 Material & Package Submittals</button>
+      <button class="tab-btn" onclick="switchTab('tab-vendor')">🏭 Vendor Document Packages (VDRL)</button>
+      <button class="tab-btn" onclick="switchTab('tab-temp')">⏳ Temporary Files & Staging Zone</button>
+    </nav>
+
+    <!-- PAGE 1: DOCUMENT CONTROLLER & QMS ORIENTED PROFILE -->
+    <section id="tab-profile" class="page-panel active">
+      <div class="profile-grid">
+        
+        <!-- Summary Box -->
+        <div class="prof-box">
+          <h3>Senior Document Controller Summary</h3>
+          <p style="color: var(--text-sub); font-size: 0.88rem; line-height: 1.6;">
+            <strong>Mohammad Rizwan</strong> is a Senior Document Control Specialist with over 18 years of extensive experience handling project documentation, engineering correspondence, transmittals, and master records for major KSA projects including Khafji Joint Operations (KJO) and Saudi Aramco contracts[cite: 2].
+          </p>
+          <br>
+          <div style="font-size: 0.85rem; color: var(--text-main); line-height: 1.6;">
+            <p><strong>Education:</strong> Bachelor of Commerce (B.Com)[cite: 2]</p>
+            <p><strong>CADD Expertise:</strong> Diploma in CADD (AutoCAD & MicroStation)[cite: 2]</p>
+            <p><strong>Piping Engineering:</strong> Diploma in Process Piping Design per ASME B31.3[cite: 2]</p>
+          </div>
+        </div>
+
+        <!-- Document Preparation & Procedures Box -->
+        <div class="prof-box">
+          <h3>Document Preparation & Control Expertise</h3>
+          <ul style="color: var(--text-sub); font-size: 0.85rem; line-height: 1.8; padding-left: 18px;">
+            <li><strong>Document Generation:</strong> Preparing technical documents, sub-contractor pre-qualification packages, and tender/bid proposal data[cite: 2].</li>
+            <li><strong>MDR & Correspondence:</strong> Logging incoming/outgoing letters, ESRs, ICTs, Waivers, and maintaining master registers with unique tracking references[cite: 2].</li>
+            <li><strong>Submittals & Logs:</strong> Managing Material Submittals (MR), Shop Drawings, Requests for Inspection (RFI), and Daily/Monthly Highlight Reports[cite: 2].</li>
+            <li><strong>System Archiving:</strong> Hard copy scanning workflows, physical & digital archiving, and SAP System records processing[cite: 2].</li>
+          </ul>
+        </div>
+
+        <!-- ISO & Quality Management Systems Box -->
+        <div class="prof-box">
+          <h3>ISO Training & QMS Audit Experience</h3>
+          <div style="font-size: 0.85rem; color: var(--text-sub); line-height: 1.6;">
+            <p style="margin-bottom: 8px;"><strong>QMS Procedure Preparation:</strong> Experienced in drafting and establishing Quality Management System (QMS) procedures and document control guidelines for organizational audit compliance[cite: 2].</p>
+            <p style="margin-bottom: 8px;"><strong>Audit Preparation & Execution:</strong> Preparing audit schedules, conducting internal audits, managing NCRs (Non-Conformance Reports), and coordinating preventive actions[cite: 2].</p>
+            
+            <div style="margin-top: 12px;">
+              <div class="badge-item">
+                <div>
+                  <div class="badge-title">Passed QMS Internal Audit Exam</div>
+                  <div style="font-size:0.75rem; color:var(--text-sub);">BVQI, Al-Khobar, KSA</div>
+                </div>
+                <span class="badge-no">BVQI Passed</span>
+              </div>
+
+              <div class="badge-item">
+                <div>
+                  <div class="badge-title">ISO Introduction Training Seminar</div>
+                  <div style="font-size:0.75rem; color:var(--text-sub);">Abdulaziz A. Kamel & Partners</div>
+                </div>
+                <span class="badge-no">Attended</span>
+              </div>
+
+              <div class="badge-item">
+                <div>
+                  <div class="badge-title">ISO Internal Audit Training Seminar</div>
+                  <div style="font-size:0.75rem; color:var(--text-sub);">Abdulaziz A. Kamel & Partners</div>
+                </div>
+                <span class="badge-no">Attended</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memberships & Project Involvement -->
+        <div class="prof-box">
+          <h3>Professional Memberships & Major Client Experience</h3>
+          <div class="badge-item">
+            <div>
+              <div class="badge-title">Indian Roads Congress (IRC)</div>
+              <div style="font-size:0.75rem; color:var(--text-sub);">Life Member</div>
+            </div>
+            <span class="badge-no">IRC-LM-104829</span>
+          </div>
+
+          <div class="badge-item">
+            <div>
+              <div class="badge-title">ARMA International</div>
+              <div style="font-size:0.75rem; color:var(--text-sub);">Records Management Professional</div>
+            </div>
+            <span class="badge-no">ARMA-MEM-88412</span>
+          </div>
+
+          <br>
+          <p style="font-size:0.85rem; color:var(--text-main);"><strong>Major Projects & Clients:</strong></p>
+          <ul style="color: var(--text-sub); font-size: 0.8rem; line-height: 1.6; padding-left: 18px; margin-top:6px;">
+            <li>Khafji Joint Operations (KJO) – ESD / Inspection Department[cite: 2]</li>
+            <li>Saudi Aramco Pipeline Construction & Abqaiq Facilities[cite: 2]</li>
+            <li>KKIA Airport Expansion & Al-Fursan Lounge Projects, Riyadh[cite: 2]</li>
+            <li>Abdul Wahab Cultural Foundation & Mosque Project, Addiriyah[cite: 2]</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PAGE 2: DOCUMENTS & DRAWINGS -->
+    <section id="tab-docs" class="page-panel">
+      <div class="controls">
+        <input type="text" placeholder="Search Document / Drawing No..." style="flex-grow:1;">
+        <button onclick="openUploadModal('Document/Drawing')" style="background:var(--accent-blue);">+ Upload Document/Drawing</button>
+      </div>
+      <div class="data-card">
+        <h3>Master Documents & Engineering Drawings Register</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Doc / Drawing Number</th>
+              <th>Title</th>
+              <th>Discipline</th>
+              <th>Rev</th>
+              <th>Status</th>
+              <th>Attachment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>ARM-GES-PROC-DWG-001</b></td>
+              <td>NGL Recovery Flow Diagram</td>
+              <td>Process</td>
+              <td>01</td>
+              <td><span style="color:#4ade80;">Approved (Code 1)</span></td>
+              <td>📎 NGL_Flow_01.dwg</td>
+            </tr>
+            <tr>
+              <td><b>KFIA-SAUDIA-ARCH-DWG-008</b></td>
+              <td>First Class Lounge Layout</td>
+              <td>Architectural</td>
+              <td>03</td>
+              <td><span style="color:#fbbf24;">App. w/ Comments (Code 2)</span></td>
+              <td>📎 Lounge_Layout.pdf</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 3: MATERIAL & PACKAGE SUBMITTALS -->
+    <section id="tab-material" class="page-panel">
+      <div class="controls">
+        <input type="text" placeholder="Search Material Submittal..." style="flex-grow:1;">
+        <button onclick="openUploadModal('Material Package')" style="background:var(--accent-green);">+ Register Material Package</button>
+      </div>
+      <div class="data-card">
+        <h3>Equipment & Material Submittals Register</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Material Submittal Ref</th>
+              <th>Package Description</th>
+              <th>Supplier / Manufacturer</th>
+              <th>Status</th>
+              <th>Attached Datasheet</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>MAT-PAN-STEEL-010</b></td>
+              <td>High Tensile Structural Steel Columns</td>
+              <td>Sabic Steel KSA</td>
+              <td><span style="color:#4ade80;">Approved</span></td>
+              <td>📎 Steel_Spec_Cert.pdf</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 4: VENDOR DOCUMENT PACKAGES (VDRL) -->
+    <section id="tab-vendor" class="page-panel">
+      <div class="controls">
+        <input type="text" placeholder="Search Vendor Package..." style="flex-grow:1;">
+        <button onclick="openUploadModal('Vendor Package')" style="background:var(--accent-amber);">+ Add Vendor Package</button>
+      </div>
+      <div class="data-card">
+        <h3>Vendor Data Requirement List (VDRL / SDRL)</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Vendor Package ID</th>
+              <th>Vendor Name</th>
+              <th>Equipment Description</th>
+              <th>Package Status</th>
+              <th>Dossier File</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>VDR-KJO-PUMP-001</b></td>
+              <td>Sulzer Pumps Ltd.</td>
+              <td>Offshore Seawater Lift Pumps</td>
+              <td><span style="color:#4ade80;">Completed</span></td>
+              <td>📎 VDRL_Dossier_Final.pdf</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAGE 5: TEMPORARY FILES & STAGING ZONE -->
+    <section id="tab-temp" class="page-panel">
+      <div class="controls">
+        <button onclick="openUploadModal('Temporary File')" style="background:#334155; color:#38bdf8;">+ Upload Draft / Temp File</button>
+      </div>
+      <div class="data-card">
+        <h3>Temporary Processing & Unassigned File Staging Zone</h3>
+        <p style="color:var(--text-sub); font-size:0.8rem; margin-bottom:12px;">Files uploaded here remain in temporary memory before being logged to official MDR registers.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Temp File Name</th>
+              <th>Upload Time</th>
+              <th>Size</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Draft_Transmittal_Unsigned.pdf</td>
+              <td>2026-09-06 18:30</td>
+              <td>2.4 MB</td>
+              <td><button style="background:var(--accent-blue); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Move to MDR</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- UPLOAD / REGISTER MODAL -->
+  <div class="modal" id="uploadModal">
+    <div class="modal-content">
+      <h3 id="modal-type" style="color:#38bdf8; margin-bottom:12px;">Register Entry</h3>
+      <form onsubmit="handleUpload(event)">
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.8rem; color:var(--text-sub);">Title / Reference No</label>
+          <input type="text" required style="width:100%; background:#0f172a; border:1px solid var(--border-color); color:white; padding:8px; border-radius:4px;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.8rem; color:var(--text-sub);">Select File (PDF, DWG, DOCX)</label>
+          <input type="file" required style="width:100%; color:white;">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+          <button type="button" onclick="closeUploadModal()" style="background:#475569; color:white; border:none; padding:8px 12px; border-radius:4px;">Cancel</button>
+          <button type="submit" style="background:var(--accent-blue); color:white; border:none; padding:8px 12px; border-radius:4px;">Save & Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function enterEDMS() {
+      document.getElementById('page-edms-gateway').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+    }
+
+    function exitToGateway() {
+      document.getElementById('main-app').style.display = 'none';
+      document.getElementById('page-edms-gateway').style.display = 'flex';
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.page-panel').forEach(panel => panel.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function openUploadModal(category) {
+      document.getElementById('modal-type').innerText = 'Upload ' + category;
+      document.getElementById('uploadModal').style.display = 'flex';
+    }
+
+    function closeUploadModal() {
+      document.getElementById('uploadModal').style.display = 'none';
+    }
+
+    function handleUpload(e) {
+      e.preventDefault();
+      alert('File successfully logged into EDMS Sub-System Register!');
+      closeUploadModal();
+    }
+  </script>
+</body>
+</html>
